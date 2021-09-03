@@ -1,0 +1,4 @@
+sudo docker ps
+# get scheduler id
+sudo docker exec -it ad0da06a5efd /bin/bash
+airflow tasks test <dag_id> <task_id> <date>

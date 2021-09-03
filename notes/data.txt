@@ -1,0 +1,13 @@
+fatch data and control date, for instance
+
+template ninja and jay?
+add data in runtime has a notation: two pairs of brackets {{}}
+
+seeing docs we have template_fields and tempalte_ext, which accept jinja template; fields are the operator params and ext is the extension of files; we can customize such fields and extension by creating a custom class that inherits the reference operator
+this is useful since by default we are not able to inject the param "parameters" (in PostgressOperator) at runtime
+
+XCOM: share data between tasks; a stored object that can be pulled by tasks;
+    - Limitations:
+        - size: sqlite 2gb, postgres 1gb, mysql 64kb; for each xcom
+        - use only for sharing small amount of data
+        

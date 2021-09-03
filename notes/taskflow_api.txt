@@ -1,0 +1,38 @@
+taskflow api has two parts:
+    - decorators
+    - xcom args
+
+Decorators: create dags in a faster way
+    - @took.python: automatically create python flow for you and call that function
+    - @task.virtualenv: execute funciton within an enviroment
+    - @task_group: agroup multiple tasks together
+
+XComs args
+- when you have dependency between tasks; it creates the dependency explicitly and automatically for you 
+- only designed for small amounts of data, do not use it for large values, such as dataframes
+- xcom_push and xcom_pull methods explicitly push/pull from their storage
+- operators auto-push their results into a xcom key named return_value, if the do_xcom_push is set to True (default);
+    - thus, if you explicitly push keys and let do_xcom_push=True you will have unnecessary xcom keys
+- you can use it in jinja templates
+    - SELECT * FROM {{ task_instance.xcom_pull(task_ids='foo', key='table_name') }}
+
+XComs are a relative of Variables, with the main difference being that XComs are per-task-instance and designed for communication within a DAG run, while Variables are global and designed for overall configuration and value sharing.
+
+VARIABLES
+you can export your variables to you enviroment by putting into your dockerfile:
+    ENV AIRFLOW_VAR_<key>
+where key is the key name of your variable
+this way you hide your variable, which is good if you have more users developing the dag applications; depends on you use case
+- six different ways to create variables:
+Airflow UI   👌
+Airflow CLI 👌
+REST API 👌
+Environment Variables ❤️
+Secret Backend ❤️
+Programatically 😖
+- Overall, by creating a variable  with an environment variable you
+    avoid making a connection to your DB
+    hide sensitive values (you variable can be fetched only within a DAG)
+
+DAGS and SUBDAGS
+- It's not possible to establish dependencies between tasks from different dags! 
