@@ -36,3 +36,5 @@ Programatically 😖
 
 DAGS and SUBDAGS
 - It's not possible to establish dependencies between tasks from different dags! 
+- To do so we can use concepts of subdags with context managers or the task group pattern
+- I believe the subdag factory concepts is not related to the design pattern factory
