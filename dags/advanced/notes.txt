@@ -1,0 +1,95 @@
+Major difficults:
+    - jinja and cron syntax
+    - Sensors
+    - timedelta objects
+    - execution rules (e.g. timeouts, poke, sensors, etc.)
+    - SLAs
+
+
+DYNAMIC TASKS
+
+Using dictionaries
+    - it doesnt seem too dynamic since we need a static dict; maybe it changes if we gather jsons from web
+    - a useful use case could be like having two generic tasks that preprocesses jsons from different sources, and if the first one failed the second one would alert us
+    - one dag can call several times the same method for grouping tasks, but we need to add a param to handle the colision of repeated ids.
+
+Branching
+    - choose a task according to a condition (dates, sql table value, etc)
+    - trigger rule: defines the behaviour of your task and why it will be triggered
+        - default: all_success, i.e. if all parents have successed
+        - other examples: all_failed, all_done, one_failed, one_success, none_failed
+        - notice the diff between one_success and none_failed_or_skipped: 
+            - the latter one says that we execute if at least one successed AND all have been completed
+        - see docs
+
+DEPENDENCIES AND HELPERS
+
+Create more complex pipelines with the following methods: 
+cross_downstream: Set downstream dependencies for all tasks in from_tasks to all tasks in to_tasks.
+chain: Given a number of tasks, builds a dependency chain.
+
+CONCURRENCY
+
+Configuration file?
+    - parallelism: default 32 (# of tasks that can be executed at most for you entire airflow instance)
+    - dag_concurrency: default 16 (# of tasks running at the same time for the same DAG)
+    - max_active_runs_per_dag: default 16 (# of dag runs that can run at the same time for a given dag)
+The python parameters at dag level are: concurency, max_actie_runs
+On operators there is the parameter task_concurrency, pool 
+
+Pool
+    - Define concurrencies, number of tasks to run, etc
+    - e.g.: see branching example; imagine that you want to execute only the 'extract' tasks once at a time; create a pools at admin > pools; now go to your data pipeline and put the pool as argument to your extract tasks; you will have one task running at a time only for this part of you pipeline
+    - alternatively you can just use pool_slots parameter instead of creating a pool at admin page
+    - Notice***: if you set a pool for your sub dag operator, it WON'T be used by the tasks within this subdag; the correct is to define the pool directly on the tasks
+
+Priority
+    - add the param priority_weight in the dag; also add the priority value in your json
+    - it only works in the same pool. if you set different pools for each task there will not be any priority and all tasks will be executed at once
+    Rules:
+        - downstream: sum up weights priorities from bottom to top
+        - upstream: is the same as the previous one but from top to bottom
+        - absolute: each task has its own priority weight
+        - ToDo: get examples of when to use each of these rules
+
+Argument depends_on_past:
+    - when set to True, keeps a task from getting triggered if the previous schedule for the task hasn’t succeeded.
+    - So unless a previous run of your DAG has failed, the depends_on_past should not be a factor, it will not affect the current run at all if the previous run executed the tasks successfully.
+
+Argument common to use with depends_on_past: wait_for_downstream
+    - run the task only if the same task in the previous dag run has succeeded as well as its downstream task (i.e. for A->B->C, only A and B need to be successed)
+    - eg: three tasks for two different dag runs:
+        - D1: A->B->C;
+        - D2: A->B->C;
+        If A1 and B1 succeeded, then A2 will be triggered
+
+Sensors
+    - DateTimeSensor: Waits until the specified datetime.
+
+Failures:
+    - callback: a function that is called according to a need
+        - dag level
+        - task level
+            - on_success_callback: expects a python function; 
+            - on_failure_callback: idem 
+            - on_success_retry
+        - it is possible to access the current context; useful for handling different execption for example.
+    - retries: param to define the # of retries
+        - usually at task level, but it is possible to set at dag level 
+            - at task level it overrides the default_args
+    - retry_delay: e.g. wait 5min to retry
+        - not suitable for tasks that are trying to access apis or dbs, for instance
+        - retry_exponential_backoff=True -> wait a little bit longer to retry 
+        - max_retry_delay: as you use previous arg you dont know how long you will wait, this arg smooths this problem
+        
+SLAs:
+    - get notified if a given event happens (e.g. timeout, failures, retries, etc.)
+    - e.g.: sla=timedelta(minutes=5)
+    - not related to start time, but dag execution time 
+    - sla_miss_callback: callback python function; this callback is defined is at dag level, which means it will be called by all tasks 
+        - params: task_list, blocking_task_list, slas, blocking_tis 
+    - Note***: if you trigger your dagger manually your sla wont be evaluated 
+
+DAG versioning
+    - add a suffix to your dag id (e.g. process_dag_1_0_0 for first version, and process_dag_1_0_1 for next run)
+    

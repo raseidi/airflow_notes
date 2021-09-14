@@ -3,7 +3,8 @@ from airflow import DAG
 from airflow.decorators import task, dag
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.dummy import DummyOperator
-
+from airflow.sensors.date_time import DateTimeSensor
+from airflow.exceptions import AirflowSensorTimeout, AirflowTaskTimeout
 from groups.process_tasks import process_tasks
 from datetime import datetime, timedelta
 
@@ -44,7 +45,39 @@ def _choosing_partner_based_on_day(execution_date):
         return 'extract_partner_astronomer'
 
     return 'dummy_stop'
+
+def _failure_callback(context):
+    print('Failure context')
+    print(context)
+
+
+def _success_callback(context):
+    print('Success context')
+    print(context)
+
+def _extract_callback_success(context):
+    print('SUCCESS TASK CALLBACK')
+    print(context)
+
+
+def _extract_callback_failure(context):
+    print('Failure TASK CALLBACK')
+    print(context)
+    if context['exception']:
+        if isinstance(context['exception'], AirflowTaskTimeout):
+            print('# # # timeout')
+        elif isinstance(context['exception'], AirflowSensorTimeout):
+            print('# # # sensor timeout')
         
+
+
+def _extract_callback_retry(context):
+    if context['ti'].try_number() > 2:
+        print('Already tried twice, taking another approach now...')
+    print('RETRY TASK CALLBACK')
+    print(context)
+
+
 
 default_args = {
     'start_date':datetime(2021, 1, 1),
@@ -58,8 +91,9 @@ default_args = {
     dagrun_timeout=timedelta(minutes=10), 
     tags=['data_science', 'customers'], 
     catchup=False,  max_active_runs=1,
+    on_success_callback=_success_callback, on_failure_callback=_failure_callback, # callbacks at dag level
 )
-def branching():
+def callback():
     start = DummyOperator(task_id='start')
     choosing_partner_based_on_day = BranchPythonOperator(
         task_id='choosing_partner_based_on_day',
@@ -71,10 +105,13 @@ def branching():
 
     choosing_partner_based_on_day >> stop
     for partner, details in partners.items():
-        @task.python(task_id=f'extract_{partner}', do_xcom_push=False, multiple_outputs=True, pool='partner_pool')
+        @task.python(task_id=f'extract_{partner}', do_xcom_push=False, multiple_outputs=True, pool='partner_pool', 
+            on_success_callback=_extract_callback_success,
+            on_failure_callback=_extract_callback_failure,
+            on_success_retry=_extract_callback_retry, # callbacks at task level
+            )
         def extract(partner_name, partner_path):
             time.sleep(3)
-            raise ValueError('failed')
             return {'partner_name': partner_name, 'partner_path': partner_path}
 
         extracted_values = extract(details['name'], details['path']) # this returns an xcom
@@ -82,4 +119,4 @@ def branching():
 
         process_tasks(extracted_values) >> storing # storing will be skipped because multiple parents are skipped
 
-dag = branching()
+dag = callback()

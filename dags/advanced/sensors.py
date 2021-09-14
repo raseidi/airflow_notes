@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.decorators import task, dag
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.dummy import DummyOperator
+from airflow.sensors.date_time import DateTimeSensor
 
 from groups.process_tasks import process_tasks
 from datetime import datetime, timedelta
@@ -59,8 +60,18 @@ default_args = {
     tags=['data_science', 'customers'], 
     catchup=False,  max_active_runs=1,
 )
-def branching():
+def sensors():
     start = DummyOperator(task_id='start')
+    delay = DateTimeSensor(
+        task_id='delay',
+        target_time='{{ execution_date.add(hours=9) }}', # time delta object
+        poke_interval=60 * 60, # every hour
+        mode='reschedule', # ToDo: see poke and alternatives
+        timeout=60 * 60 * 10, # if your condition is never true; highly recommended to set timeout
+        # execution_timeout='', # has no default value
+        soft_fail=True, # when your time out fail your sensor wont fail but will be skipped
+        exponential_backoff=True
+    )
     choosing_partner_based_on_day = BranchPythonOperator(
         task_id='choosing_partner_based_on_day',
         python_callable=_choosing_partner_based_on_day,
@@ -74,7 +85,6 @@ def branching():
         @task.python(task_id=f'extract_{partner}', do_xcom_push=False, multiple_outputs=True, pool='partner_pool')
         def extract(partner_name, partner_path):
             time.sleep(3)
-            raise ValueError('failed')
             return {'partner_name': partner_name, 'partner_path': partner_path}
 
         extracted_values = extract(details['name'], details['path']) # this returns an xcom
@@ -82,4 +92,4 @@ def branching():
 
         process_tasks(extracted_values) >> storing # storing will be skipped because multiple parents are skipped
 
-dag = branching()
+dag = sensors()
