@@ -64,6 +64,7 @@ Argument common to use with depends_on_past: wait_for_downstream
         If A1 and B1 succeeded, then A2 will be triggered
 
 Sensors
+    - waits for something to do another thing
     - DateTimeSensor: Waits until the specified datetime.
 
 Failures:

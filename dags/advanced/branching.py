@@ -33,6 +33,7 @@ partners = {
 
 def _choosing_partner_based_on_day(execution_date):
     day = execution_date.day_of_week
+    print('DAY!!!')
     print(day)
     if day == 1: # monday
         return 'extract_partner_snowflake'
@@ -71,10 +72,10 @@ def branching():
 
     choosing_partner_based_on_day >> stop
     for partner, details in partners.items():
-        @task.python(task_id=f'extract_{partner}', do_xcom_push=False, multiple_outputs=True, pool='partner_pool')
+        @task.python(task_id=f'extract_{partner}', do_xcom_push=False, multiple_outputs=True)
         def extract(partner_name, partner_path):
             time.sleep(3)
-            raise ValueError('failed')
+            # raise ValueError('failed')
             return {'partner_name': partner_name, 'partner_path': partner_path}
 
         extracted_values = extract(details['name'], details['path']) # this returns an xcom
