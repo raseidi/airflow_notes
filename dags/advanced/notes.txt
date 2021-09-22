@@ -1,11 +1,3 @@
-Major difficults:
-    - jinja and cron syntax
-    - Sensors
-    - timedelta objects
-    - execution rules (e.g. timeouts, poke, sensors, etc.)
-    - SLAs
-
-
 DYNAMIC TASKS
 
 Using dictionaries

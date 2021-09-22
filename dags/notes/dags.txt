@@ -26,6 +26,9 @@ PostgressOperator(task_id='create_table', sql='CREATE TABLE IF NOT EXISTS my_tab
 not idempotent:
 PostgressOperator(task_id='create_table', sql='CREATE TABLE my_table')
 
-catchup: prevent to run non-triggered tasks (if false); (docs def): The scheduler, by default, will kick off a DAG Run for any interval that has not been run since the last execution date (or has been cleared) (if true);
+
+A key capability of Airflow is that these DAG Runs are atomic, idempotent items, and the scheduler, by default, will examine the lifetime of the DAG (from start to end/now, one interval at a time) and kick off a DAG Run for any interval that has not been run (or has been cleared). This concept is called Catchup.
+
+catchup: prevent to run non-tr iggered tasks (if false); (docs def): The scheduler, by default, will kick off a DAG Run for any interval that has not been run since the last execution date (or has been cleared) (if true);
 backfilling: automatically backfill your data for a period time; common for reusing dags; docs: when you may want to run the dag for a specified historical period
 see https://airflow.apache.org/docs/apache-airflow/stable/dag-run.html

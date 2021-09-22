@@ -60,7 +60,7 @@ default_args = {
     tags=['data_science', 'customers'], 
     catchup=False,  max_active_runs=1,
 )
-def branching():
+def my_dag():
     start = DummyOperator(task_id='start')
     choosing_partner_based_on_day = BranchPythonOperator(
         task_id='choosing_partner_based_on_day',
@@ -83,4 +83,4 @@ def branching():
 
         process_tasks(extracted_values) >> storing # storing will be skipped because multiple parents are skipped
 
-dag = branching()
+dag = my_dag()

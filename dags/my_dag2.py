@@ -14,7 +14,6 @@ def _extract(partner_name):
     print(partner_name)
 
 with DAG(
-    #AAAAAAAAAAAAAAa
     dag_id='my_dag',
     description='DAG in charge of processing customer data',
     start_date=datetime(2021, 1, 1), # each task can have diff dates
@@ -39,3 +38,4 @@ with DAG(
             'partner_name': '{{ var.json.my_dag_partner.name }}'
         }, # thanks to custom operator we are able to inject data at runtime; this parameters is now templated
     )
+
